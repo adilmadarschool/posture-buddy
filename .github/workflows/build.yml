@@ -1,0 +1,24 @@
+name: Build Windows installers
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt pyinstaller
+      - run: python -m PyInstaller --noconfirm --onefile --noconsole --name PostureBuddy --hidden-import pystray._win32 posture_buddy.py
+      - run: python -m PyInstaller --noconfirm --onefile --noconsole --name PostureBuddyTest --hidden-import pystray._win32 posture_buddy_test.py
+      - run: choco install innosetup -y --no-progress
+      - run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer.iss
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DTEST installer.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PostureBuddy-Windows
+          path: dist/*.exe
